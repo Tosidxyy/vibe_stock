@@ -50,7 +50,7 @@ Agent Tool → Service → Provider / Database
 
 ## 3. 仓库结构
 
-以下是 V0.1 的目标结构；目前已建立 `frontend/`、`backend/app/core/`、`backend/app/models/`、`backend/app/providers/`、`backend/tests/`、`evals/` 和 `docs/`。其余业务目录随对应 TODO 阶段创建。
+以下是 V0.1 的目标结构；目前已建立 `frontend/`、`backend/app/core/`、`backend/app/models/`、`backend/app/providers/`、`backend/app/services/`、`backend/app/database/`、`backend/tests/`、`evals/` 和 `docs/`。其余业务目录随对应 TODO 阶段创建。
 
 ```text
 stockpilot/
@@ -94,6 +94,8 @@ StockService
 MarketService
 WatchlistService
 ```
+
+`StockService` 提供搜索、单只/批量行情和日/周 K 线；`MarketService` 提供三大指数；`WatchlistService` 通过 SQLAlchemy Session 增删查自选股。Service 只接收 Provider 内部模型，不接触东方财富原始字段。
 
 ### Provider
 `MarketDataProvider` 定义统一接口，`EastMoneyProvider` 实现：
@@ -145,6 +147,8 @@ K 线         30～60 秒
 新闻         3～5 分钟
 ```
 
+当前已实现：行情与指数 TTL 为 5 秒、K 线 60 秒、搜索 300 秒。每类缓存最多保留 256 个键；最近成功结果额外保留 3600 秒。新请求遇到 `DataSourceError` 且存在未过期的旧结果时，返回 `CachedResult(data=..., stale=True)`；无旧结果则继续抛异常。返回缓存数据时复制模型，避免调用方修改缓存。
+
 Provider 短暂失败且存在旧缓存时，可返回：
 
 ```text
@@ -170,6 +174,8 @@ Trace 至少保存：
 session_id / step_index / tool_name / tool_input
 tool_output_summary / status / latency_ms / created_at
 ```
+
+当前已建立四张表及 `watchlist` 唯一代码约束、聊天消息和 Trace 到会话的外键。`create_database_engine()` 读取 `DATABASE_URL`，SQLite 连接启用外键；`init_db(engine)` 显式创建表，后续 REST API 阶段再接入应用生命周期。自选股添加同一代码是幂等操作，列表按添加顺序返回，删除不存在的代码返回 `False`。当前尚未实现聊天或 Trace 的业务读写。
 
 ## 8. API
 
@@ -266,7 +272,7 @@ Task Success Rate
 
 ## 13. 环境变量
 
-根目录 `.env.example` 提供示例；后端从 `backend/.env` 读取本地配置。初始化阶段配置模块已定义以下字段，尚未连接模型或数据库：
+根目录 `.env.example` 提供示例；后端从 `backend/.env` 读取本地配置。数据库工厂已使用 `DATABASE_URL`；模型配置仍未接入 Agent：
 
 ```text
 APP_NAME=StockPilot

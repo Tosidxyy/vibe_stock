@@ -6,7 +6,7 @@
 当前阶段：
 
 ```text
-EastMoney Provider 已实现 → 下一阶段：Service + DB
+Service + DB 已实现 → 下一阶段：REST API
 ```
 
 ## 1. 初始化
@@ -40,17 +40,17 @@ EastMoney Provider 已实现 → 下一阶段：Service + DB
 
 ## 3. Service + DB
 
-- [ ] `StockService`
-- [ ] `MarketService`
-- [ ] TTL Cache
-- [ ] stale 降级
-- [ ] SQLite + SQLAlchemy
-- [ ] `watchlist`
-- [ ] `chat_session`
-- [ ] `chat_message`
-- [ ] `agent_trace`
-- [ ] `WatchlistService`
-- [ ] Service / DB 测试
+- [x] `StockService`
+- [x] `MarketService`
+- [x] TTL Cache
+- [x] stale 降级
+- [x] SQLite + SQLAlchemy
+- [x] `watchlist`
+- [x] `chat_session`
+- [x] `chat_message`
+- [x] `agent_trace`
+- [x] `WatchlistService`
+- [x] Service / DB 测试
 
 验收：自选股可增删查；Service 不暴露东方财富原始字段。
 
