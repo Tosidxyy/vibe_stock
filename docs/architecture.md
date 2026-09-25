@@ -50,6 +50,8 @@ Agent Tool → Service → Provider / Database
 
 ## 3. 仓库结构
 
+以下是 V0.1 的目标结构；初始化阶段已建立 `frontend/`、`backend/app/core/`、`backend/tests/`、`evals/` 和 `docs/`。其余业务目录随对应 TODO 阶段创建。
+
 ```text
 stockpilot/
 ├── frontend/
@@ -167,6 +169,8 @@ tool_output_summary / status / latency_ms / created_at
 
 ## 8. API
 
+初始化阶段已实现 `GET /health`，返回 `{"status":"ok"}`。下列业务 API 仍属后续阶段。
+
 ```text
 GET    /api/market/indices
 GET    /api/market/overview
@@ -258,9 +262,11 @@ Task Success Rate
 
 ## 13. 环境变量
 
-`.env.example`：
+根目录 `.env.example` 提供示例；后端从 `backend/.env` 读取本地配置。初始化阶段配置模块已定义以下字段，尚未连接模型或数据库：
 
 ```text
+APP_NAME=StockPilot
+ENVIRONMENT=development
 MODEL_NAME=
 MODEL_API_KEY=
 MODEL_BASE_URL=

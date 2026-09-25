@@ -6,18 +6,18 @@
 当前阶段：
 
 ```text
-V0.1 文档基线完成 → 准备项目初始化
+V0.1 项目初始化完成 → 下一阶段：EastMoney Provider
 ```
 
 ## 1. 初始化
 
-- [ ] 建立 `frontend/ backend/ evals/ docs/`
-- [ ] 放入当前 Markdown 文档
-- [ ] 创建 `.gitignore`、`.env.example`、`README.md`
-- [ ] 使用 `uv` 初始化后端
-- [ ] FastAPI + `GET /health`
-- [ ] 初始化 Next.js + TypeScript + Tailwind
-- [ ] 初始化 Commit
+- [x] 建立 `frontend/ backend/ evals/ docs/`
+- [x] 放入当前 Markdown 文档
+- [x] 创建 `.gitignore`、`.env.example`、`README.md`
+- [x] 使用 `uv` 初始化后端
+- [x] FastAPI + `GET /health`
+- [x] 初始化 Next.js + TypeScript + Tailwind
+- [x] 初始化 Commit
 
 验收：前后端可启动，`/health` 返回 200。
 
