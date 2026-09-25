@@ -2,6 +2,7 @@
 
 from fastapi import Request
 
+from app.agent.service import StockAgentService
 from app.services.market import MarketService
 from app.services.stock import StockService
 from app.services.watchlist import WatchlistService
@@ -17,3 +18,7 @@ def get_market_service(request: Request) -> MarketService:
 
 def get_watchlist_service(request: Request) -> WatchlistService:
     return request.app.state.watchlist_service
+
+
+def get_agent_service(request: Request) -> StockAgentService:
+    return request.app.state.agent_service

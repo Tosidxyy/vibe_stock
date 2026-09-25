@@ -7,6 +7,11 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from pydantic_ai.models import Model
+
+from app.agent.service import StockAgentService
+from app.agent.tools import AgentDependencies
+from app.api.agent import router as agent_router
 from app.api.routes import router
 from app.core.config import get_settings
 from app.database.session import create_database_engine, create_session_factory, init_db
@@ -14,12 +19,16 @@ from app.providers.base import MarketDataProvider
 from app.providers.eastmoney import EastMoneyProvider
 from app.providers.exceptions import DataSourceError, InvalidSymbolError, ProviderTimeoutError
 from app.services.market import MarketService
+from app.services.chat import ChatService
 from app.services.stock import StockService
 from app.services.watchlist import WatchlistService
 
 
 def create_app(
-    *, provider: MarketDataProvider | None = None, database_url: str | None = None
+    *,
+    provider: MarketDataProvider | None = None,
+    database_url: str | None = None,
+    agent_model: Model | None = None,
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
@@ -28,9 +37,20 @@ def create_app(
         data_provider = provider if provider is not None else EastMoneyProvider()
         try:
             init_db(engine)
+            session_factory = create_session_factory(engine)
             application.state.stock_service = StockService(data_provider)
             application.state.market_service = MarketService(data_provider)
-            application.state.watchlist_service = WatchlistService(create_session_factory(engine))
+            application.state.watchlist_service = WatchlistService(session_factory)
+            application.state.agent_service = StockAgentService(
+                get_settings(),
+                AgentDependencies(
+                    stocks=application.state.stock_service,
+                    market=application.state.market_service,
+                    watchlist=application.state.watchlist_service,
+                ),
+                ChatService(session_factory),
+                model=agent_model,
+            )
             yield
         finally:
             if owns_provider:
@@ -45,6 +65,7 @@ def create_app(
         allow_headers=["Content-Type"],
     )
     application.include_router(router)
+    application.include_router(agent_router)
 
     @application.exception_handler(ProviderTimeoutError)
     async def provider_timeout(_request: Request, _exc: ProviderTimeoutError) -> JSONResponse:
