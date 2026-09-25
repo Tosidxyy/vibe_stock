@@ -33,7 +33,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             <span className="nav-dot" />市场概览
           </Link>
           <Link className="nav-link" href="/#watchlist"><span className="nav-dot" />自选股</Link>
-          <span className="nav-link muted"><span className="nav-dot" />AI Agent <small>待接入</small></span>
+          <Link className={`nav-link ${pathname === "/agent" ? "active" : ""}`} href="/agent" aria-current={pathname === "/agent" ? "page" : undefined}><span className="nav-dot" />AI Agent</Link>
           <span className="nav-link muted"><span className="nav-dot" />执行追踪 <small>待接入</small></span>
         </nav>
         <div className="sidebar-footer">

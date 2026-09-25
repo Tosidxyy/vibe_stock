@@ -5,6 +5,7 @@ import { amount, moveClass, number, signed } from "../lib/format";
 import type { IntradayPoint, MarketIndex } from "../lib/types";
 import { useResource } from "../lib/use-resource";
 import { MarketLineChart } from "./Charts";
+import { AgentChat } from "./AgentChat";
 import { WatchlistPanel } from "./WatchlistPanel";
 
 const indexNames: Record<string, string> = {
@@ -64,13 +65,9 @@ export function MarketDashboard() {
           </section>
         </div>
 
-        <aside className="right-col" aria-label="智能分析预留区域">
-          <section className="card agent-card">
-            <div className="agent-head"><span className="agent-icon">✦</span><div><h2>Stock Agent</h2><small>基于真实行情的 Tool Calling</small></div><span className="chip">即将接入</span></div>
-            <div className="agent-placeholder"><span className="agent-orb">✦</span><h3>行情分析，下一阶段开启</h3><p>Agent 对话将在接入模型与行情 Tool 后提供。当前请使用上方搜索和左侧看盘功能。</p></div>
-            <div className="prompt-preview"><span>分析我的自选股</span><span>比较两只股票</span><span>今天市场怎么样？</span></div>
-          </section>
-          <section className="card trace-card"><div className="section-head"><div><h2>Agent Execution Trace</h2><span>工具执行记录</span></div></div><div className="section-state">运行 Agent 后会在这里显示真实 Tool 调用。</div></section>
+        <aside className="right-col" aria-label="智能分析">
+          <section className="card agent-card"><AgentChat compact /></section>
+          <section className="card trace-card"><div className="section-head"><div><h2>Agent Execution Trace</h2><span>工具执行记录</span></div></div><div className="section-state">Trace 查询与展示将在下一阶段接入。</div></section>
         </aside>
       </div>
       <p className="footnote">StockPilot V0.1 · 行情信息仅供参考，不构成投资建议</p>

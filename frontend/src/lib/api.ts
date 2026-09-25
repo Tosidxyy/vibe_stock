@@ -21,6 +21,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
       404: "没有找到对应数据。",
       422: "输入格式不正确，请检查后重试。",
       503: "行情数据源暂不可用，请稍后重试。",
+      502: "模型请求失败，请稍后重试。",
       504: "行情数据源响应超时，请稍后重试。",
     };
     throw new ApiError(response.status, messages[response.status] || `请求失败（HTTP ${response.status}）。`);
