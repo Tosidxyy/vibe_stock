@@ -5,7 +5,7 @@
 ## 开发闭环
 
 ```text
-实现 → 简单测试 → 测试通过 → git commit
+实现 → 简单测试 → 测试通过 → git commit 和 git push
 → 同步相关 Markdown → 最后更新 TODO.md
 ```
 

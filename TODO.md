@@ -6,7 +6,7 @@
 当前阶段：
 
 ```text
-V0.1 项目初始化完成 → 下一阶段：EastMoney Provider
+EastMoney Provider 已实现 → 下一阶段：Service + DB
 ```
 
 ## 1. 初始化
@@ -23,18 +23,20 @@ V0.1 项目初始化完成 → 下一阶段：EastMoney Provider
 
 ## 2. EastMoney Provider
 
-- [ ] `MarketDataProvider`
-- [ ] Quote / Kline / Index / Search 内部模型
-- [ ] `to_secid()`
-- [ ] 股票搜索
-- [ ] 批量实时行情
-- [ ] 三大指数
-- [ ] 日 K / 周 K
-- [ ] 主 / 备 Endpoint
-- [ ] Timeout / 统一异常
-- [ ] Provider 基础测试
+- [x] `MarketDataProvider`
+- [x] Quote / Kline / Index / Search 内部模型
+- [x] `to_secid()`
+- [x] 股票搜索
+- [x] 批量实时行情
+- [x] 三大指数
+- [x] 日 K / 周 K
+- [x] 主 / 备 Endpoint
+- [x] Timeout / 统一异常
+- [x] Provider 基础测试
 
 验收：P0 数据能力均返回内部标准模型。
+
+注：K 线解析与错误路径通过固定响应测试；2026-09-25 本机访问 K 线节点持续断开，在线成功验证待节点恢复后重试。
 
 ## 3. Service + DB
 

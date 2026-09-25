@@ -31,7 +31,7 @@ Service
 → httpx.AsyncClient
 ```
 
-## 2. 已验证 Endpoint
+## 2. 旧项目已验证 Endpoint
 
 | 能力 | Endpoint |
 |---|---|
@@ -188,3 +188,14 @@ Desktop 调用     → FastAPI + Agent Web
 ```
 
 开发 Provider 时优先参考旧项目已通过测试的请求参数，再用 StockPilot 测试确认当前接口仍可用。
+
+## 11. StockPilot 当前实现与在线验证（2026-09-25）
+
+- `to_secid()` 接收六位 A 股代码：`6` 开头映射沪市，`0` / `3` 开头映射深市，`4` / `8` 开头映射北交所；其他代码抛 `InvalidSymbolError`。
+- `search_stocks()` 请求 `input`、`type=14`、`count`，仅保留 `Classify=AStock` 并去重。接口无匹配时返回 `Data=null`、`TotalCount=0`，Provider 转为空列表。
+- `get_quotes()` 一次发送多个 `secid`。`f2` / `f3` / `f4` 等价格和涨跌字段除以 100；`f5` 保留原始成交量数值，`f6` 保留原始成交额数值；缺失或 `-` 转为 `None`。
+- `get_indices()` 用 `1.000001`、`0.399001`、`0.399006` 一次获取上证、深证、创业板指数，并要求三项齐全。
+- 行情和指数优先最近成功节点，主节点请求失败、返回异常或数据结构不合法时尝试 `push2delay`。超时、HTTP 错误、非 JSON 和异常 `rc` 转为统一 Provider 异常。
+- `get_kline()` 用 `klt=101` / `102` 表示日 K / 周 K、`fqt=0` 表示不复权，并解析逗号分隔的 K 线。空 K 线作为数据源失败处理，避免把接口受限误报为无历史数据。
+
+本机在线请求已确认搜索、无结果搜索、批量行情及备用节点指数响应结构。`push2his.eastmoney.com` 在本次验证中持续断开连接；日 K / 周 K 的解析和错误路径已用固定响应测试，但当前网络环境无法完成 K 线在线成功验证。后续接入 Service 前需重试该节点。

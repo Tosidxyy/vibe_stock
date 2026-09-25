@@ -50,7 +50,7 @@ Agent Tool → Service → Provider / Database
 
 ## 3. 仓库结构
 
-以下是 V0.1 的目标结构；初始化阶段已建立 `frontend/`、`backend/app/core/`、`backend/tests/`、`evals/` 和 `docs/`。其余业务目录随对应 TODO 阶段创建。
+以下是 V0.1 的目标结构；目前已建立 `frontend/`、`backend/app/core/`、`backend/app/models/`、`backend/app/providers/`、`backend/tests/`、`evals/` 和 `docs/`。其余业务目录随对应 TODO 阶段创建。
 
 ```text
 stockpilot/
@@ -106,6 +106,8 @@ WatchlistService
 
 东方财富 `fX` 字段不得进入 Service、Agent 或前端。
 
+当前 Provider 接口包含 `search_stocks()`、`get_quotes()`、`get_indices()` 和 `get_kline()`；均返回内部模型。Provider 使用 `httpx.AsyncClient`，可注入客户端用于测试。行情与指数共用批量请求及主备节点；K 线和搜索使用数据源文档中的单一节点。
+
 ## 5. 内部模型
 
 核心模型：
@@ -119,6 +121,8 @@ MoneyFlow
 StockNews
 SymbolSearchResult
 ```
+
+当前已实现 P0 的 `StockQuote`、`KlineItem`、`MarketIndex`、`SymbolSearchResult`；其余模型随对应功能阶段添加。
 
 数据流：
 
