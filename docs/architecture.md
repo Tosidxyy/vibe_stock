@@ -95,7 +95,7 @@ MarketService
 WatchlistService
 ```
 
-`StockService` 提供搜索、单只/批量行情和日/周 K 线；`MarketService` 提供三大指数；`WatchlistService` 通过 SQLAlchemy Session 增删查自选股。Service 只接收 Provider 内部模型，不接触东方财富原始字段。
+`StockService` 提供搜索、单只/批量行情和日/周 K 线；`MarketService` 提供三大指数及指数分时；`WatchlistService` 通过 SQLAlchemy Session 增删查自选股。Service 只接收 Provider 内部模型，不接触东方财富原始字段。
 
 ### Provider
 `MarketDataProvider` 定义统一接口，`EastMoneyProvider` 实现：
@@ -108,7 +108,7 @@ WatchlistService
 
 东方财富 `fX` 字段不得进入 Service、Agent 或前端。
 
-当前 Provider 接口包含 `search_stocks()`、`get_quotes()`、`get_indices()` 和 `get_kline()`；均返回内部模型。Provider 使用 `httpx.AsyncClient`，可注入客户端用于测试。行情与指数共用批量请求及主备节点；K 线和搜索使用数据源文档中的单一节点。
+当前 Provider 接口包含 `search_stocks()`、`get_quotes()`、`get_indices()`、`get_index_intraday()` 和 `get_kline()`；均返回内部模型。Provider 使用 `httpx.AsyncClient`，可注入客户端用于测试。行情、指数和指数分时均有主备节点；K 线和搜索使用数据源文档中的单一节点。
 
 ## 5. 内部模型
 
@@ -124,7 +124,7 @@ StockNews
 SymbolSearchResult
 ```
 
-当前已实现 P0 的 `StockQuote`、`KlineItem`、`MarketIndex`、`SymbolSearchResult`；其余模型随对应功能阶段添加。
+当前已实现 P0 的 `StockQuote`、`KlineItem`、`MarketIndex`、`IntradayPoint`、`SymbolSearchResult`；其余模型随对应功能阶段添加。
 
 数据流：
 
@@ -147,7 +147,7 @@ K 线         30～60 秒
 新闻         3～5 分钟
 ```
 
-当前已实现：行情与指数 TTL 为 5 秒、K 线 60 秒、搜索 300 秒。每类缓存最多保留 256 个键；最近成功结果额外保留 3600 秒。新请求遇到 `DataSourceError` 且存在未过期的旧结果时，返回 `CachedResult(data=..., stale=True)`；无旧结果则继续抛异常。返回缓存数据时复制模型，避免调用方修改缓存。
+当前已实现：行情、指数与指数分时 TTL 为 5 秒、K 线 60 秒、搜索 300 秒。每类缓存最多保留 256 个键；最近成功结果额外保留 3600 秒。新请求遇到 `DataSourceError` 且存在未过期的旧结果时，返回 `CachedResult(data=..., stale=True)`；无旧结果则继续抛异常。返回缓存数据时复制模型，避免调用方修改缓存。
 
 Provider 短暂失败且存在旧缓存时，可返回：
 
@@ -183,6 +183,7 @@ tool_output_summary / status / latency_ms / created_at
 
 ```text
 GET    /api/market/indices
+GET    /api/market/indices/{code}/intraday
 GET    /api/market/overview               三大指数 + 自选股数量
 
 GET    /api/stocks/search?q=
@@ -197,7 +198,7 @@ DELETE /api/watchlist/{code}
 
 行情查询统一返回 `{ "data": ..., "stale": false }`；`overview` 返回 `indices`、`watchlist_count` 和 `stale`。股票未找到返回 404，参数错误返回 422，数据源不可用返回 503，超时返回 504。自选股添加接受 `{ "symbol": "600519" }`，返回 201；删除成功返回 204。批量行情最多接受 50 个代码，并经 `StockService` 一次调用 Provider。
 
-市场涨跌家数属于 P1，当前 `overview` 不提供该数据。以下 API 尚未启用，等待对应数据或 Agent 能力完成：
+指数分时接口支持上证 `000001`、深证 `399001`、创业板 `399006`，仅返回最新交易日分钟点。指数模型还包含最高、最低点位。市场涨跌家数属于 P1，当前 `overview` 不提供该数据。以下 API 尚未启用，等待对应数据或 Agent 能力完成：
 
 ```text
 GET    /api/stocks/{code}/money-flow

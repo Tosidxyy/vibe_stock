@@ -19,7 +19,7 @@ uv run uvicorn app.main:app --reload
 uv run python -c "from app.database.session import create_database_engine, init_db; init_db(create_database_engine())"
 ```
 
-后端启动时会自动创建数据库表。可访问 `/docs` 查看 API 文档；当前提供指数、基础市场概览、股票搜索、单只/批量行情、日/周 K 线和自选股增删查。行情响应包含 `stale` 标记；资金流、新闻、市场涨跌家数等 P1 能力尚未接入。
+后端启动时会自动创建数据库表。可访问 `/docs` 查看 API 文档；当前提供指数及分时、基础市场概览、股票搜索、单只/批量行情、日/周 K 线和自选股增删查。行情响应包含 `stale` 标记；资金流、新闻、市场涨跌家数等 P1 能力尚未接入。
 
 ## 启动前端
 
