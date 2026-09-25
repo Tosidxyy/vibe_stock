@@ -1,0 +1,57 @@
+export type DataEnvelope<T> = { data: T; stale: boolean };
+
+export type MarketIndex = {
+  symbol: string;
+  name: string;
+  value: number | null;
+  change_percent: number | null;
+  change_amount: number | null;
+  volume: number | null;
+  turnover: number | null;
+  high: number | null;
+  low: number | null;
+};
+
+export type IntradayPoint = {
+  time: string;
+  price: number;
+  volume: number;
+  turnover: number;
+};
+
+export type StockQuote = {
+  symbol: string;
+  name: string;
+  price: number | null;
+  change_percent: number | null;
+  change_amount: number | null;
+  volume: number | null;
+  turnover: number | null;
+  high: number | null;
+  low: number | null;
+  open: number | null;
+  previous_close: number | null;
+  turnover_rate: number | null;
+  pe_ratio: number | null;
+};
+
+export type KlineItem = {
+  date: string;
+  open: number;
+  close: number;
+  high: number;
+  low: number;
+  volume: number;
+  turnover: number;
+};
+
+export type StockSearchResult = {
+  symbol: string;
+  name: string;
+  market: string;
+};
+
+export type WatchlistEntry = {
+  symbol: string;
+  added_at: string;
+};
