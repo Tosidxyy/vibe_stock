@@ -20,6 +20,7 @@ from app.providers.eastmoney import EastMoneyProvider
 from app.providers.exceptions import DataSourceError, InvalidSymbolError, ProviderTimeoutError
 from app.services.market import MarketService
 from app.services.chat import ChatService
+from app.services.trace import TraceService
 from app.services.stock import StockService
 from app.services.watchlist import WatchlistService
 
@@ -41,6 +42,7 @@ def create_app(
             application.state.stock_service = StockService(data_provider)
             application.state.market_service = MarketService(data_provider)
             application.state.watchlist_service = WatchlistService(session_factory)
+            application.state.trace_service = TraceService(session_factory)
             application.state.agent_service = StockAgentService(
                 get_settings(),
                 AgentDependencies(
@@ -49,6 +51,7 @@ def create_app(
                     watchlist=application.state.watchlist_service,
                 ),
                 ChatService(session_factory),
+                application.state.trace_service,
                 model=agent_model,
             )
             yield
@@ -63,6 +66,7 @@ def create_app(
         allow_origins=get_settings().cors_origins,
         allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["Content-Type"],
+        expose_headers=["X-Agent-Session-ID"],
     )
     application.include_router(router)
     application.include_router(agent_router)

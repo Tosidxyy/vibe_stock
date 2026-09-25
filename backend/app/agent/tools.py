@@ -1,7 +1,7 @@
 """Agent tools delegate only to existing services."""
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 from starlette.concurrency import run_in_threadpool
@@ -9,6 +9,7 @@ from starlette.concurrency import run_in_threadpool
 from app.services.market import MarketService
 from app.services.stock import StockService
 from app.services.watchlist import WatchlistService
+from app.agent.trace import ToolStep
 
 
 @dataclass(frozen=True)
@@ -16,6 +17,7 @@ class AgentDependencies:
     stocks: StockService
     market: MarketService
     watchlist: WatchlistService
+    trace_steps: list[ToolStep] = field(default_factory=list)
 
 
 def _symbol(value: str) -> str:

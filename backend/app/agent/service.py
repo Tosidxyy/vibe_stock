@@ -1,6 +1,7 @@
 """PydanticAI orchestration for the P0 market tools."""
 
 import re
+from dataclasses import replace
 from typing import Literal
 
 from starlette.concurrency import run_in_threadpool
@@ -13,10 +14,12 @@ from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.usage import UsageLimits
 
 from app.agent import tools
+from app.agent.trace import record_tool
 from app.agent.tools import AgentDependencies
 from app.core.config import Settings
 from app.providers.exceptions import DataSourceError, ProviderTimeoutError
 from app.services.chat import ChatService, ChatTurn
+from app.services.trace import TraceService
 
 
 SYSTEM_INSTRUCTIONS = """你是 StockPilot 的 A 股行情助手。回答使用中文，简洁、准确。
@@ -37,7 +40,10 @@ class ModelNotConfiguredError(Exception):
 
 
 class AgentExecutionError(Exception):
-    pass
+    def __init__(self, session_id: str, status_code: int = 502) -> None:
+        self.session_id = session_id
+        self.status_code = status_code
+        super().__init__("Agent execution failed")
 
 
 def _visible_history(turns: list[ChatTurn]) -> list[ModelMessage]:
@@ -56,7 +62,10 @@ def build_agent(model: Model) -> Agent[AgentDependencies, str]:
     @agent.tool
     async def get_stock_quote(ctx: RunContext[AgentDependencies], symbol: str) -> dict:
         """Retrieve a live or marked stale quote by six-digit A-share symbol."""
-        return await tools.get_stock_quote(ctx.deps, symbol)
+        return await record_tool(
+            ctx.deps.trace_steps, "get_stock_quote", {"symbol": symbol},
+            lambda: tools.get_stock_quote(ctx.deps, symbol),
+        )
 
     @agent.tool
     async def get_stock_kline(
@@ -66,17 +75,27 @@ def build_agent(model: Model) -> Agent[AgentDependencies, str]:
         limit: int = 5,
     ) -> dict:
         """Retrieve recent daily or weekly OHLC candles and volume for one A-share."""
-        return await tools.get_stock_kline(ctx.deps, symbol, period, limit)
+        return await record_tool(
+            ctx.deps.trace_steps, "get_stock_kline",
+            {"symbol": symbol, "period": period, "limit": limit},
+            lambda: tools.get_stock_kline(ctx.deps, symbol, period, limit),
+        )
 
     @agent.tool
     async def get_market_indices(ctx: RunContext[AgentDependencies]) -> dict:
         """Retrieve the three major A-share indices and their changes."""
-        return await tools.get_market_indices(ctx.deps)
+        return await record_tool(
+            ctx.deps.trace_steps, "get_market_indices", {},
+            lambda: tools.get_market_indices(ctx.deps),
+        )
 
     @agent.tool
     async def get_watchlist(ctx: RunContext[AgentDependencies]) -> dict:
         """Retrieve saved symbols with quotes using one batched query."""
-        return await tools.get_watchlist(ctx.deps)
+        return await record_tool(
+            ctx.deps.trace_steps, "get_watchlist", {},
+            lambda: tools.get_watchlist(ctx.deps),
+        )
 
     return agent
 
@@ -87,11 +106,13 @@ class StockAgentService:
         settings: Settings,
         dependencies: AgentDependencies,
         chats: ChatService,
+        traces: TraceService,
         *,
         model: Model | None = None,
     ) -> None:
         self._dependencies = dependencies
         self._chats = chats
+        self._traces = traces
         if model is not None:
             self._agent = build_agent(model)
         elif settings.model_name and settings.model_api_key:
@@ -114,20 +135,28 @@ class StockAgentService:
         if self._agent is None:
             raise ModelNotConfiguredError
         turns = await run_in_threadpool(self._chats.messages, session_id) if session_id else []
+        active_session_id = await run_in_threadpool(self._chats.ensure_session, session_id, message)
+        run_dependencies = replace(self._dependencies, trace_steps=[])
         try:
             result = await self._agent.run(
                 message,
-                deps=self._dependencies,
+                deps=run_dependencies,
                 message_history=_visible_history(turns),
                 usage_limits=UsageLimits(request_limit=8, tool_calls_limit=12),
             )
-        except (DataSourceError, ProviderTimeoutError):
-            raise
+        except ProviderTimeoutError as error:
+            raise AgentExecutionError(active_session_id, 504) from error
+        except DataSourceError as error:
+            raise AgentExecutionError(active_session_id, 503) from error
         except Exception as error:
-            raise AgentExecutionError from error
+            raise AgentExecutionError(active_session_id) from error
+        finally:
+            await run_in_threadpool(
+                self._traces.save_steps, active_session_id, run_dependencies.trace_steps
+            )
         answer = result.output.strip()
         if not answer:
-            raise AgentExecutionError
+            raise AgentExecutionError(active_session_id)
         wants_market_facts = any(term in message for term in MARKET_FACT_TERMS) or bool(
             re.search(r"(?<!\d)[03468]\d{5}(?!\d)", message)
         )
@@ -139,8 +168,8 @@ class StockAgentService:
         )
         if wants_market_facts and not used_tool:
             answer = "本次未能从行情 Tool 获取数据，暂无法回答行情事实。请重试或提供六位股票代码。"
-        saved_id = await run_in_threadpool(self._chats.save_exchange, session_id, message, answer)
-        return saved_id, answer
+        await run_in_threadpool(self._chats.save_exchange, active_session_id, message, answer)
+        return active_session_id, answer
 
     async def messages(self, session_id: str) -> list[ChatTurn]:
         return await run_in_threadpool(self._chats.messages, session_id)

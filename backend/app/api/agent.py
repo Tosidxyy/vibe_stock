@@ -1,17 +1,21 @@
-"""Agent chat endpoints; tool execution traces arrive in TODO phase 7."""
+"""Agent chat and Tool execution trace endpoints."""
 
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, StringConstraints
 
 from app.agent.service import AgentExecutionError, ModelNotConfiguredError, StockAgentService
-from app.api.dependencies import get_agent_service
+from app.api.dependencies import get_agent_service, get_trace_service
+from app.api.schemas import DataResponse
 from app.services.chat import ChatNotFoundError
+from app.services.trace import TraceEntry, TraceService
 
 router = APIRouter(prefix="/api/agent", tags=["agent"])
 AgentService = Annotated[StockAgentService, Depends(get_agent_service)]
+Traces = Annotated[TraceService, Depends(get_trace_service)]
 Message = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=2000)]
 
 
@@ -48,8 +52,16 @@ async def agent_chat(body: ChatRequest, agent: AgentService) -> ChatResponse:
         raise HTTPException(status_code=503, detail="Agent model is not configured") from None
     except ChatNotFoundError:
         raise HTTPException(status_code=404, detail="Chat session not found") from None
-    except AgentExecutionError:
-        raise HTTPException(status_code=502, detail="Agent model request failed") from None
+    except AgentExecutionError as error:
+        detail = {
+            503: "Market data temporarily unavailable",
+            504: "Market data provider timed out",
+        }.get(error.status_code, "Agent model request failed")
+        raise HTTPException(
+            status_code=error.status_code,
+            detail=detail,
+            headers={"X-Agent-Session-ID": error.session_id},
+        ) from None
     return ChatResponse(session_id=UUID(session_id), answer=answer)
 
 
@@ -63,3 +75,19 @@ async def get_chat_session(session_id: UUID, agent: AgentService) -> ChatSession
         session_id=session_id,
         messages=[ChatMessageResponse(role=item.role, content=item.content) for item in messages],
     )
+
+
+@router.get("/traces/recent", response_model=DataResponse[list[TraceEntry]])
+async def recent_traces(
+    traces: Traces,
+    limit: Annotated[int, Query(ge=1, le=20)] = 5,
+) -> DataResponse[list[TraceEntry]]:
+    return DataResponse(data=await run_in_threadpool(traces.recent, limit))
+
+
+@router.get("/traces/{session_id}", response_model=DataResponse[list[TraceEntry]])
+async def session_traces(session_id: UUID, traces: Traces) -> DataResponse[list[TraceEntry]]:
+    try:
+        return DataResponse(data=await run_in_threadpool(traces.for_session, str(session_id)))
+    except ChatNotFoundError:
+        raise HTTPException(status_code=404, detail="Chat session not found") from None

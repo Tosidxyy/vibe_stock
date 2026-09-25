@@ -78,8 +78,8 @@ def test_agent_chat_saves_and_restores_session(tmp_path) -> None:
 
 
 def test_agent_without_model_reports_configuration_error(tmp_path, monkeypatch) -> None:
-    monkeypatch.delenv("MODEL_NAME", raising=False)
-    monkeypatch.delenv("MODEL_API_KEY", raising=False)
+    monkeypatch.setenv("MODEL_NAME", "")
+    monkeypatch.setenv("MODEL_API_KEY", "")
     from app.core.config import get_settings
     get_settings.cache_clear()
     url = f"sqlite:///{(tmp_path / 'unconfigured.db').as_posix()}"
