@@ -3,7 +3,7 @@ import type { DataEnvelope } from "./types";
 const baseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(public status: number, message: string, public sessionId: string | null = null) {
     super(message);
   }
 }
@@ -24,7 +24,11 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
       502: "模型请求失败，请稍后重试。",
       504: "行情数据源响应超时，请稍后重试。",
     };
-    throw new ApiError(response.status, messages[response.status] || `请求失败（HTTP ${response.status}）。`);
+    throw new ApiError(
+      response.status,
+      messages[response.status] || `请求失败（HTTP ${response.status}）。`,
+      response.headers.get("X-Agent-Session-ID"),
+    );
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;

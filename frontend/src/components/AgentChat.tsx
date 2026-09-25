@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiRequest, errorText } from "../lib/api";
+import { ApiError, apiRequest, errorText } from "../lib/api";
 
 type Message = { role: "user" | "assistant"; content: string };
 type ChatResult = { session_id: string; answer: string };
@@ -10,7 +10,14 @@ type StoredSession = { session_id: string; messages: Message[] };
 const sessionKey = "stockpilot-agent-session";
 const suggestions = ["今天市场怎么样？", "今天我的自选股怎么样？", "东方财富最近五天走势？"];
 
-export function AgentChat({ compact = false, initialPrompt = "" }: { compact?: boolean; initialPrompt?: string }) {
+export function AgentChat({
+  compact = false, initialPrompt = "", onSessionChange, onTraceUpdated,
+}: {
+  compact?: boolean;
+  initialPrompt?: string;
+  onSessionChange?: (sessionId: string | null) => void;
+  onTraceUpdated?: () => void;
+}) {
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -32,6 +39,7 @@ export function AgentChat({ compact = false, initialPrompt = "" }: { compact?: b
           if (!active) return;
           setSessionId(result.session_id);
           setMessages(result.messages);
+          onSessionChange?.(result.session_id);
         })
         .catch(() => {
           if (active) window.localStorage.removeItem(sessionKey);
@@ -39,7 +47,7 @@ export function AgentChat({ compact = false, initialPrompt = "" }: { compact?: b
         .finally(() => { if (active) setLoading(false); });
     }
     return () => { active = false; };
-  }, []);
+  }, [onSessionChange]);
 
   const send = async (value = draft) => {
     const message = value.trim();
@@ -54,9 +62,17 @@ export function AgentChat({ compact = false, initialPrompt = "" }: { compact?: b
       });
       setMessages((current) => [...current, { role: "user", content: message }, { role: "assistant", content: response.answer }]);
       setSessionId(response.session_id);
+      onSessionChange?.(response.session_id);
+      onTraceUpdated?.();
       window.localStorage.setItem(sessionKey, response.session_id);
       setDraft("");
     } catch (cause) {
+      if (cause instanceof ApiError && cause.sessionId) {
+        setSessionId(cause.sessionId);
+        onSessionChange?.(cause.sessionId);
+        window.localStorage.setItem(sessionKey, cause.sessionId);
+        onTraceUpdated?.();
+      }
       setError(errorText(cause));
     } finally {
       setBusy(false);
@@ -66,6 +82,7 @@ export function AgentChat({ compact = false, initialPrompt = "" }: { compact?: b
   const newChat = () => {
     setMessages([]);
     setSessionId(null);
+    onSessionChange?.(null);
     setError(null);
     window.localStorage.removeItem(sessionKey);
   };

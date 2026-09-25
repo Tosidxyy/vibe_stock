@@ -6,6 +6,7 @@ import type { IntradayPoint, MarketIndex } from "../lib/types";
 import { useResource } from "../lib/use-resource";
 import { MarketLineChart } from "./Charts";
 import { AgentChat } from "./AgentChat";
+import { TracePanel } from "./TracePanel";
 import { WatchlistPanel } from "./WatchlistPanel";
 
 const indexNames: Record<string, string> = {
@@ -14,6 +15,7 @@ const indexNames: Record<string, string> = {
 
 export function MarketDashboard() {
   const [selected, setSelected] = useState("000001");
+  const [traceVersion, setTraceVersion] = useState(0);
   const indices = useResource<MarketIndex[]>("/api/market/indices", 30000);
   const trend = useResource<IntradayPoint[]>(`/api/market/indices/${selected}/intraday`, 30000);
   const active = indices.data?.find((item) => item.symbol === selected);
@@ -66,8 +68,8 @@ export function MarketDashboard() {
         </div>
 
         <aside className="right-col" aria-label="智能分析">
-          <section className="card agent-card"><AgentChat compact /></section>
-          <section className="card trace-card"><div className="section-head"><div><h2>Agent Execution Trace</h2><span>工具执行记录</span></div></div><div className="section-state">Trace 查询与展示将在下一阶段接入。</div></section>
+          <section className="card agent-card"><AgentChat compact onTraceUpdated={() => setTraceVersion((value) => value + 1)} /></section>
+          <section className="card trace-card"><TracePanel recent compact version={traceVersion} /></section>
         </aside>
       </div>
       <p className="footnote">StockPilot V0.1 · 行情信息仅供参考，不构成投资建议</p>

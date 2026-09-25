@@ -55,3 +55,14 @@ export type WatchlistEntry = {
   symbol: string;
   added_at: string;
 };
+
+export type TraceEntry = {
+  session_id: string;
+  step_index: number;
+  tool_name: string;
+  tool_input: Record<string, string | number | boolean | null>;
+  tool_output_summary: string;
+  status: "success" | "error";
+  latency_ms: number;
+  created_at: string;
+};
