@@ -50,7 +50,7 @@ Agent Tool → Service → Provider / Database
 
 ## 3. 仓库结构
 
-以下是 V0.1 的目标结构；目前已建立 `frontend/`、`backend/app/api/`、`backend/app/core/`、`backend/app/models/`、`backend/app/providers/`、`backend/app/services/`、`backend/app/database/`、`backend/tests/`、`evals/` 和 `docs/`。其余业务目录随对应 TODO 阶段创建。
+以下是 V0.1 的目标结构；目前已建立 `frontend/`、`backend/app/api/`、`backend/app/agent/`、`backend/app/core/`、`backend/app/models/`、`backend/app/providers/`、`backend/app/services/`、`backend/app/database/`、`backend/tests/`、`evals/` 和 `docs/`。其余业务目录随对应 TODO 阶段创建。
 
 ```text
 stockpilot/
@@ -175,7 +175,7 @@ session_id / step_index / tool_name / tool_input
 tool_output_summary / status / latency_ms / created_at
 ```
 
-当前已建立四张表及 `watchlist` 唯一代码约束、聊天消息和 Trace 到会话的外键。`create_database_engine()` 读取 `DATABASE_URL`，SQLite 连接启用外键；FastAPI 启动时调用 `init_db(engine)` 创建表，关闭时释放数据库连接与 Provider 客户端。自选股添加同一代码是幂等操作，列表按添加顺序返回，删除不存在的代码返回 `False`。当前尚未实现聊天或 Trace 的业务读写。
+当前已建立四张表及 `watchlist` 唯一代码约束、聊天消息和 Trace 到会话的外键。`create_database_engine()` 读取 `DATABASE_URL`，SQLite 连接启用外键；FastAPI 启动时调用 `init_db(engine)` 创建表，关闭时释放数据库连接与 Provider 客户端。自选股添加同一代码是幂等操作，列表按添加顺序返回，删除不存在的代码返回 `False`。Agent 对话现将用户与助手可见消息写入 `chat_session` / `chat_message`；Trace 表仍待下一阶段使用。
 
 ## 8. API
 
@@ -198,12 +198,19 @@ DELETE /api/watchlist/{code}
 
 行情查询统一返回 `{ "data": ..., "stale": false }`；`overview` 返回 `indices`、`watchlist_count` 和 `stale`。股票未找到返回 404，参数错误返回 422，数据源不可用返回 503，超时返回 504。自选股添加接受 `{ "symbol": "600519" }`，返回 201；删除成功返回 204。批量行情最多接受 50 个代码，并经 `StockService` 一次调用 Provider。
 
-指数分时接口支持上证 `000001`、深证 `399001`、创业板 `399006`，仅返回最新交易日分钟点。指数模型还包含最高、最低点位。市场涨跌家数属于 P1，当前 `overview` 不提供该数据。以下 API 尚未启用，等待对应数据或 Agent 能力完成：
+指数分时接口支持上证 `000001`、深证 `399001`、创业板 `399006`，仅返回最新交易日分钟点。指数模型还包含最高、最低点位。市场涨跌家数属于 P1，当前 `overview` 不提供该数据。Agent 已提供：
+
+```text
+GET    /api/agent/status
+POST   /api/agent/chat
+GET    /api/agent/sessions/{session_id}
+```
+
+聊天请求包含 `message` 和可选 UUID `session_id`，响应包含 `session_id` 与 `answer`。未配置模型返回 503；模型请求失败返回 502；不存在的会话返回 404。以下 API 仍未启用：
 
 ```text
 GET    /api/stocks/{code}/money-flow
 GET    /api/stocks/{code}/news
-POST   /api/agent/chat
 GET    /api/agent/traces/{session_id}
 ```
 
@@ -228,6 +235,8 @@ Tool 只做：
 - Service 调用
 - 结构化返回
 
+当前四个 P0 Tool 为 `get_stock_quote`、`get_stock_kline`、`get_market_indices`、`get_watchlist`；均经 Service 读取数据。自选股 Tool 用单次批量行情查询。P1 资金流与新闻 Tool 尚未注册。单次对话最多 8 次模型请求、12 次 Tool 调用。每轮成功后保存用户与助手可见消息；续聊仅重建最近 20 条可见消息，不保存模型私有推理或把本阶段的聊天记录当作 Trace。行情事实问题若没有发生 Tool 调用，后端返回固定的无数据提示，不转发模型编出的数值。
+
 配置：
 
 ```text
@@ -236,7 +245,7 @@ MODEL_API_KEY
 MODEL_BASE_URL
 ```
 
-Agent 不硬编码模型 Key。
+Agent 不硬编码模型 Key。缺少名称或 Key 时不构造模型，前端显示未配置状态；完整在线 Agent Case 需在配置模型并有可用行情源后验证。
 
 ## 10. Trace
 
@@ -282,7 +291,7 @@ Task Success Rate
 
 ## 13. 环境变量
 
-根目录 `.env.example` 提供示例；后端从 `backend/.env` 读取本地配置。数据库工厂已使用 `DATABASE_URL`；模型配置仍未接入 Agent：
+根目录 `.env.example` 提供示例；后端从 `backend/.env` 读取本地配置。数据库工厂使用 `DATABASE_URL`，Agent 使用模型配置：
 
 ```text
 APP_NAME=StockPilot

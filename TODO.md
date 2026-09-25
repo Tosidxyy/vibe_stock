@@ -6,7 +6,7 @@
 当前阶段：
 
 ```text
-Web 行情 P0 已实现 → 下一阶段：Agent（市场温度及 P1 API 待数据能力）
+Agent P0 已实现并离线验证 → 下一阶段：Trace（在线模型验收待配置）
 ```
 
 ## 1. 初始化
@@ -87,19 +87,21 @@ Web 行情 P0 已实现 → 下一阶段：Agent（市场温度及 P1 API 待数
 
 ## 6. Agent
 
-- [ ] PydanticAI + 模型配置
-- [ ] System Prompt
-- [ ] `get_stock_quote`
-- [ ] `get_stock_kline`
-- [ ] `get_market_indices`
-- [ ] `get_watchlist`
+- [x] PydanticAI + 模型配置
+- [x] System Prompt
+- [x] `get_stock_quote`
+- [x] `get_stock_kline`
+- [x] `get_market_indices`
+- [x] `get_watchlist`
 - [ ] P1：`get_stock_money_flow`
 - [ ] P1：`get_stock_news`
-- [ ] `POST /api/agent/chat`
-- [ ] Agent Chat 前端
-- [ ] Tool 基础测试
+- [x] `POST /api/agent/chat`
+- [x] Agent Chat 前端
+- [x] Tool 基础测试
 
 验收：通过 `prd.md` 核心 Agent Case。
+
+注：四个 P0 Tool、模型配置、会话持久化和首页/`/agent` 对话已实现；使用本地函数模型验证 Tool 调用、接口和浏览器会话恢复。当前未配置真实模型，且本机行情源此前返回 503，因此 `prd.md` 核心 Case 的真实模型在线验收尚待环境具备后执行。P1 资金流与新闻 Tool 未实现，Trace 留待下一阶段。
 
 ## 7. Trace
 
