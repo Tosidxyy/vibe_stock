@@ -40,6 +40,16 @@ def test_search_filters_and_deduplicates_a_shares() -> None:
     asyncio.run(run())
 
 
+def test_search_returns_empty_list_for_no_matches() -> None:
+    async def run() -> None:
+        async with _client(lambda request: httpx.Response(200, json={
+            "QuotationCodeTable": {"Status": 0, "TotalCount": 0, "Data": None}
+        })) as client:
+            assert await EastMoneyProvider(client).search_stocks("no-match") == []
+
+    asyncio.run(run())
+
+
 def test_quotes_are_batched_scaled_and_ordered() -> None:
     calls = []
 

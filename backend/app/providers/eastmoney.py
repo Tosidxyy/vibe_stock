@@ -106,7 +106,11 @@ class EastMoneyProvider(MarketDataProvider):
             (_SEARCH_ENDPOINT,), {"input": query, "type": 14, "count": limit}
         )
         table = payload.get("QuotationCodeTable")
-        if not isinstance(table, dict) or table.get("Status") != 0 or not isinstance(table.get("Data"), list):
+        if not isinstance(table, dict) or table.get("Status") != 0:
+            raise DataSourceError("EastMoney search response is invalid")
+        if table.get("Data") is None and table.get("TotalCount") == 0:
+            return []
+        if not isinstance(table.get("Data"), list):
             raise DataSourceError("EastMoney search response is invalid")
         results: list[SymbolSearchResult] = []
         seen: set[str] = set()
