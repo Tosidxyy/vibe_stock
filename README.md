@@ -1,6 +1,6 @@
 # StockPilot
 
-StockPilot V0.1 是 A 股看盘与 AI 辅助分析应用。本仓库当前已完成项目初始化、东方财富 Provider、Service、SQLite 数据层及 P0 REST API；前端行情、Agent 和评测能力将按 `TODO.md` 分阶段实现。
+StockPilot V0.1 是 A 股看盘与 AI 辅助分析应用。当前已完成 P0 行情数据链、REST API 和 Web 行情页面；Agent、Trace 与评测能力按 `TODO.md` 分阶段实现。
 
 ## 启动后端
 
@@ -30,7 +30,7 @@ npm install
 npm run dev
 ```
 
-访问 `http://localhost:3000`。
+访问 `http://localhost:3000`。前端默认连接 `http://localhost:8000`，可参考 `frontend/.env.example` 设置 `NEXT_PUBLIC_API_BASE_URL`。首页提供三大指数、分时走势、搜索和自选股；个股详情提供基础行情与日/周 K 线。数据源不可用时会显示重试提示，若后端有最近成功缓存则标注旧数据。市场温度、资金流、新闻及 Agent 目前只显示待接入状态，不会展示模拟行情。
 
 ## 检查
 

@@ -6,7 +6,7 @@
 当前阶段：
 
 ```text
-P0 REST API 已实现 → 下一阶段：Web 行情（P1 API 待数据能力）
+Web 行情 P0 已实现 → 下一阶段：Agent（市场温度及 P1 API 待数据能力）
 ```
 
 ## 1. 初始化
@@ -69,19 +69,21 @@ P0 REST API 已实现 → 下一阶段：Web 行情（P1 API 待数据能力）
 
 ## 5. Web 行情
 
-- [ ] Layout / Sidebar / Topbar
-- [ ] 三大指数
-- [ ] 市场走势图
-- [ ] 自选股增删与跳转
+- [x] Layout / Sidebar / Topbar
+- [x] 三大指数
+- [x] 市场走势图
+- [x] 自选股增删与跳转
 - [ ] 市场温度
-- [ ] 股票搜索
-- [ ] 个股基础行情
-- [ ] 日 K / 周 K + 成交量
+- [x] 股票搜索
+- [x] 个股基础行情
+- [x] 日 K / 周 K + 成交量
 - [ ] P1：资金流
 - [ ] P1：新闻
-- [ ] Loading / Empty / Error
+- [x] Loading / Empty / Error
 
 验收：整体布局与视觉方向参考 `docs/ui-demo.html`，并与 `design.md` 基本一致；Build / Type Check 通过。
+
+注：P0 页面已接入真实 API，并提供错误重试与旧缓存提示。市场温度、资金流和新闻仍待对应 P1 数据能力；Agent 与 Trace 当前为非交互占位。2026-09-25 本机行情源返回不可用，已核对页面错误态与重试入口，在线数据展示待源恢复后复验。
 
 ## 6. Agent
 

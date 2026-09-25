@@ -209,6 +209,8 @@ GET    /api/agent/traces/{session_id}
 
 本地 Next.js 来源通过 `CORS_ORIGINS` 配置允许跨域访问后端。
 
+Web 行情页面使用浏览器端请求访问上述 API，默认后端地址为 `http://localhost:8000`，可由 `NEXT_PUBLIC_API_BASE_URL` 配置。指数分时及日/周 K 线使用 ECharts，页面按 API 的 `stale` 标记提示旧缓存；请求失败时展示错误与重试，不合成行情数值。市场温度、资金流和新闻仍等待 P1 数据能力。
+
 ## 9. Agent
 
 ```text
