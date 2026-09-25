@@ -175,7 +175,7 @@ session_id / step_index / tool_name / tool_input
 tool_output_summary / status / latency_ms / created_at
 ```
 
-当前已建立四张表及 `watchlist` 唯一代码约束、聊天消息和 Trace 到会话的外键。`create_database_engine()` 读取 `DATABASE_URL`，SQLite 连接启用外键；FastAPI 启动时调用 `init_db(engine)` 创建表，关闭时释放数据库连接与 Provider 客户端。自选股添加同一代码是幂等操作，列表按添加顺序返回，删除不存在的代码返回 `False`。Agent 对话现将用户与助手可见消息写入 `chat_session` / `chat_message`；Trace 表仍待下一阶段使用。
+当前已建立四张表及 `watchlist` 唯一代码约束、聊天消息和 Trace 到会话的外键。`create_database_engine()` 读取 `DATABASE_URL`，SQLite 连接启用外键；FastAPI 启动时调用 `init_db(engine)` 创建表，关闭时释放数据库连接与 Provider 客户端。自选股添加同一代码是幂等操作，列表按添加顺序返回，删除不存在的代码返回 `False`。Agent 对话将用户与助手可见消息写入 `chat_session` / `chat_message`；每次实际执行的 Tool 步骤写入 `agent_trace`。
 
 ## 8. API
 
@@ -204,14 +204,15 @@ DELETE /api/watchlist/{code}
 GET    /api/agent/status
 POST   /api/agent/chat
 GET    /api/agent/sessions/{session_id}
+GET    /api/agent/traces/recent?limit=5
+GET    /api/agent/traces/{session_id}
 ```
 
-聊天请求包含 `message` 和可选 UUID `session_id`，响应包含 `session_id` 与 `answer`。未配置模型返回 503；模型请求失败返回 502；不存在的会话返回 404。以下 API 仍未启用：
+聊天请求包含 `message` 和可选 UUID `session_id`，响应包含 `session_id` 与 `answer`。未配置模型返回 503；模型请求失败返回 502；行情源不可用返回 503，超时返回 504；不存在的会话返回 404。执行失败时响应头 `X-Agent-Session-ID` 提供已创建的会话 ID，可查询失败 Tool 的 Trace；该头已对跨域前端开放。Trace 查询统一返回 `{ "data": [...], "stale": false }`，最近记录最多查询 20 条。以下 API 仍未启用：
 
 ```text
 GET    /api/stocks/{code}/money-flow
 GET    /api/stocks/{code}/news
-GET    /api/agent/traces/{session_id}
 ```
 
 本地 Next.js 来源通过 `CORS_ORIGINS` 配置允许跨域访问后端。
@@ -235,7 +236,7 @@ Tool 只做：
 - Service 调用
 - 结构化返回
 
-当前四个 P0 Tool 为 `get_stock_quote`、`get_stock_kline`、`get_market_indices`、`get_watchlist`；均经 Service 读取数据。自选股 Tool 用单次批量行情查询。P1 资金流与新闻 Tool 尚未注册。单次对话最多 8 次模型请求、12 次 Tool 调用。每轮成功后保存用户与助手可见消息；续聊仅重建最近 20 条可见消息，不保存模型私有推理或把本阶段的聊天记录当作 Trace。行情事实问题若没有发生 Tool 调用，后端返回固定的无数据提示，不转发模型编出的数值。
+当前四个 P0 Tool 为 `get_stock_quote`、`get_stock_kline`、`get_market_indices`、`get_watchlist`；均经 Service 读取数据。自选股 Tool 用单次批量行情查询。P1 资金流与新闻 Tool 尚未注册。单次对话最多 8 次模型请求、12 次 Tool 调用。对话开始前创建会话；成功后保存用户与助手可见消息，失败的 Tool 步骤仍可按会话查询。续聊仅重建最近 20 条可见消息，不保存模型私有推理。行情事实问题若没有发生 Tool 调用，后端返回固定的无数据提示，不转发模型编出的数值。
 
 配置：
 
@@ -245,17 +246,17 @@ MODEL_API_KEY
 MODEL_BASE_URL
 ```
 
-Agent 不硬编码模型 Key。缺少名称或 Key 时不构造模型，前端显示未配置状态；完整在线 Agent Case 需在配置模型并有可用行情源后验证。
+Agent 不硬编码模型 Key。缺少名称或 Key 时不构造模型，前端显示未配置状态。真实 DeepSeek 模型已验证会选择指数 Tool；使用固定测试行情时完成回答。2026-09-25 本机真实东方财富行情源返回 503，完整在线行情 Case 仍待数据源恢复后复验。
 
 ## 10. Trace
 
-Tool 执行时：
+Tool 执行时按调用顺序记录：
 
 ```text
-计时 → 执行 → 记录 Input → Output Summary → Status → Latency → 持久化
+记录受限 Input → 计时执行 → Output Summary / Status / Latency → 持久化
 ```
 
-不保存模型私有推理。
+每轮使用独立步骤列表，会话内 `step_index` 跨轮递增。Input 仅包含 Tool 参数，字符串最长保留 64 字符；结果仅保存条数等摘要，失败仅保存规范化错误摘要，不保存原始行情响应、异常内容或模型私有推理。Dashboard 展示最近记录，`/agent` 展示当前会话全部记录并可展开输入与摘要。真实模型与真实行情源联调时，行情源失败步骤已成功持久化。
 
 ## 11. Evaluation
 

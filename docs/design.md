@@ -93,7 +93,7 @@ Sidebar：
 比较宁德时代和比亚迪
 ```
 
-首页现提供实际对话输入和快捷问题；Trace 区域仍显示下一阶段的占位说明。
+首页提供实际对话输入和快捷问题；下方展示最近 Tool Trace 的名称、成功/失败状态、耗时和结果摘要。
 
 ## 5. 个股详情 `/stock/[code]`
 
@@ -138,17 +138,17 @@ AI 快捷入口：
 
 Agent 回答优先使用简洁结构化信息。
 
-当前工作台提供可滚动对话、快捷问题、新对话和模型未配置提示；刷新页面时按浏览器保存的会话 ID 从后端恢复可见消息。Trace 详情仍保留占位，下一阶段接入。
+当前工作台提供可滚动对话、快捷问题、新对话和模型未配置提示；刷新页面时按浏览器保存的会话 ID 从后端恢复可见消息。右侧展示当前会话的完整 Tool Trace，包括失败步骤；失败响应也会恢复对应会话供查看。
 
 Trace：
 
 ```text
 ✓ get_watchlist       42ms
 ✓ get_stock_quote    287ms
-✓ generate_response  981ms
+! get_stock_kline    504ms
 ```
 
-展开查看 Input、Output Summary、Status、Latency。
+每条记录直接显示 Status、Latency 与 Output Summary，可展开查看 Input 和结果摘要。Trace 只展示实际执行的 Tool，不展示模型内部推理。
 
 ## 7. Agent Eval（P1）
 

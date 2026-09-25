@@ -6,7 +6,7 @@
 当前阶段：
 
 ```text
-Agent P0 已实现并离线验证 → 下一阶段：Trace（在线模型验收待配置）
+Trace 已实现并完成测试 → 下一阶段：Evaluation（真实行情源在线复验待恢复）
 ```
 
 ## 1. 初始化
@@ -83,7 +83,7 @@ Agent P0 已实现并离线验证 → 下一阶段：Trace（在线模型验收�
 
 验收：整体布局与视觉方向参考 `docs/ui-demo.html`，并与 `design.md` 基本一致；Build / Type Check 通过。
 
-注：P0 页面已接入真实 API，并提供错误重试与旧缓存提示。市场温度、资金流和新闻仍待对应 P1 数据能力；Agent 与 Trace 当前为非交互占位。2026-09-25 本机行情源返回不可用，已核对页面错误态与重试入口，在线数据展示待源恢复后复验。
+注：P0 页面已接入真实 API，并提供错误重试与旧缓存提示。Agent 对话和 Trace 已可交互；市场温度、资金流和新闻仍待对应 P1 数据能力。2026-09-25 本机行情源返回不可用，已核对页面错误态与重试入口，在线数据展示待源恢复后复验。
 
 ## 6. Agent
 
@@ -101,17 +101,19 @@ Agent P0 已实现并离线验证 → 下一阶段：Trace（在线模型验收�
 
 验收：通过 `prd.md` 核心 Agent Case。
 
-注：四个 P0 Tool、模型配置、会话持久化和首页/`/agent` 对话已实现；使用本地函数模型验证 Tool 调用、接口和浏览器会话恢复。当前未配置真实模型，且本机行情源此前返回 503，因此 `prd.md` 核心 Case 的真实模型在线验收尚待环境具备后执行。P1 资金流与新闻 Tool 未实现，Trace 留待下一阶段。
+注：四个 P0 Tool、模型配置、会话持久化和首页/`/agent` 对话已实现；使用本地函数模型验证 Tool 调用、接口和浏览器会话恢复。2026-09-25 使用真实 DeepSeek 模型验证了指数 Tool 选择，并在固定测试行情下完成回答；接真实东方财富时行情源返回 503，`prd.md` 核心 Case 的真实行情在线验收仍待复验。P1 资金流与新闻 Tool 未实现。
 
 ## 7. Trace
 
-- [ ] Tool / Input / Output Summary / Status / Latency
-- [ ] 写入 `agent_trace`
-- [ ] Trace 查询 API
-- [ ] Dashboard 最近 Trace
-- [ ] `/agent` 完整 Trace
+- [x] Tool / Input / Output Summary / Status / Latency
+- [x] 写入 `agent_trace`
+- [x] Trace 查询 API
+- [x] Dashboard 最近 Trace
+- [x] `/agent` 完整 Trace
 
 验收：成功、失败 Tool 都可观察，不保存私有推理。
+
+注：成功与失败 Trace 已通过 pytest 和浏览器检查；真实 DeepSeek 调用在行情源失败时记录了失败步骤，在固定测试行情下记录了成功步骤。真实东方财富端到端成功验收待行情源恢复。
 
 ## 8. Evaluation
 
