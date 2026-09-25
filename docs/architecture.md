@@ -50,7 +50,7 @@ Agent Tool → Service → Provider / Database
 
 ## 3. 仓库结构
 
-以下是 V0.1 的目标结构；目前已建立 `frontend/`、`backend/app/core/`、`backend/app/models/`、`backend/app/providers/`、`backend/app/services/`、`backend/app/database/`、`backend/tests/`、`evals/` 和 `docs/`。其余业务目录随对应 TODO 阶段创建。
+以下是 V0.1 的目标结构；目前已建立 `frontend/`、`backend/app/api/`、`backend/app/core/`、`backend/app/models/`、`backend/app/providers/`、`backend/app/services/`、`backend/app/database/`、`backend/tests/`、`evals/` 和 `docs/`。其余业务目录随对应 TODO 阶段创建。
 
 ```text
 stockpilot/
@@ -175,31 +175,38 @@ session_id / step_index / tool_name / tool_input
 tool_output_summary / status / latency_ms / created_at
 ```
 
-当前已建立四张表及 `watchlist` 唯一代码约束、聊天消息和 Trace 到会话的外键。`create_database_engine()` 读取 `DATABASE_URL`，SQLite 连接启用外键；`init_db(engine)` 显式创建表，后续 REST API 阶段再接入应用生命周期。自选股添加同一代码是幂等操作，列表按添加顺序返回，删除不存在的代码返回 `False`。当前尚未实现聊天或 Trace 的业务读写。
+当前已建立四张表及 `watchlist` 唯一代码约束、聊天消息和 Trace 到会话的外键。`create_database_engine()` 读取 `DATABASE_URL`，SQLite 连接启用外键；FastAPI 启动时调用 `init_db(engine)` 创建表，关闭时释放数据库连接与 Provider 客户端。自选股添加同一代码是幂等操作，列表按添加顺序返回，删除不存在的代码返回 `False`。当前尚未实现聊天或 Trace 的业务读写。
 
 ## 8. API
 
-初始化阶段已实现 `GET /health`，返回 `{"status":"ok"}`。下列业务 API 仍属后续阶段。
+已实现 `GET /health` 和以下 P0 业务 API：
 
 ```text
 GET    /api/market/indices
-GET    /api/market/overview
+GET    /api/market/overview               三大指数 + 自选股数量
 
 GET    /api/stocks/search?q=
+GET    /api/stocks/quotes?codes=600519,000001
 GET    /api/stocks/{code}/quote
-GET    /api/stocks/{code}/kline
-GET    /api/stocks/{code}/money-flow
-GET    /api/stocks/{code}/news
+GET    /api/stocks/{code}/kline?period=daily|weekly&limit=120
 
 GET    /api/watchlist
 POST   /api/watchlist
 DELETE /api/watchlist/{code}
+```
 
+行情查询统一返回 `{ "data": ..., "stale": false }`；`overview` 返回 `indices`、`watchlist_count` 和 `stale`。股票未找到返回 404，参数错误返回 422，数据源不可用返回 503，超时返回 504。自选股添加接受 `{ "symbol": "600519" }`，返回 201；删除成功返回 204。批量行情最多接受 50 个代码，并经 `StockService` 一次调用 Provider。
+
+市场涨跌家数属于 P1，当前 `overview` 不提供该数据。以下 API 尚未启用，等待对应数据或 Agent 能力完成：
+
+```text
+GET    /api/stocks/{code}/money-flow
+GET    /api/stocks/{code}/news
 POST   /api/agent/chat
 GET    /api/agent/traces/{session_id}
 ```
 
-P1 API 可在对应能力实现后启用。
+本地 Next.js 来源通过 `CORS_ORIGINS` 配置允许跨域访问后端。
 
 ## 9. Agent
 
@@ -282,6 +289,7 @@ MODEL_API_KEY=
 MODEL_BASE_URL=
 DATABASE_URL=sqlite:///./stockpilot.db
 MARKET_DATA_PROVIDER=eastmoney
+CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
 ```
 
 ## 14. 架构决策

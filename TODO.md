@@ -6,7 +6,7 @@
 当前阶段：
 
 ```text
-Service + DB 已实现 → 下一阶段：REST API
+P0 REST API 已实现 → 下一阶段：Web 行情（P1 API 待数据能力）
 ```
 
 ## 1. 初始化
@@ -56,14 +56,16 @@ Service + DB 已实现 → 下一阶段：REST API
 
 ## 4. REST API
 
-- [ ] Market indices / overview
-- [ ] Stock search / quote / kline
-- [ ] Watchlist GET / POST / DELETE
+- [x] Market indices / overview
+- [x] Stock search / quote / kline
+- [x] Watchlist GET / POST / DELETE
 - [ ] P1：money-flow
 - [ ] P1：news
-- [ ] 核心 API 测试
+- [x] 核心 API 测试
 
 验收：P0 API 足够支撑 Dashboard 和详情页。
+
+注：`overview` 当前提供三大指数与自选股数量；市场涨跌家数及 P1 资金流、新闻 API 等待对应数据能力，不返回虚构行情。
 
 ## 5. Web 行情
 
