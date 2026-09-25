@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Literal, Sequence
 
-from app.models.market import KlineItem, MarketIndex, StockQuote, SymbolSearchResult
+from app.models.market import IntradayPoint, KlineItem, MarketIndex, StockQuote, SymbolSearchResult
 
 
 class MarketDataProvider(ABC):
@@ -15,6 +15,9 @@ class MarketDataProvider(ABC):
 
     @abstractmethod
     async def get_indices(self) -> list[MarketIndex]: ...
+
+    @abstractmethod
+    async def get_index_intraday(self, index_code: str = "000001") -> list[IntradayPoint]: ...
 
     @abstractmethod
     async def get_kline(

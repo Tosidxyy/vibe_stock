@@ -1,11 +1,11 @@
 """EastMoney public-Web adapter for P0 A-share market data."""
 
-from datetime import date
+from datetime import date, datetime
 from typing import Any, Literal, Sequence
 
 import httpx
 
-from app.models.market import KlineItem, MarketIndex, StockQuote, SymbolSearchResult
+from app.models.market import IntradayPoint, KlineItem, MarketIndex, StockQuote, SymbolSearchResult
 from app.providers.base import MarketDataProvider
 from app.providers.exceptions import DataSourceError, InvalidSymbolError, ProviderTimeoutError
 
@@ -15,9 +15,14 @@ _QUOTE_ENDPOINTS = (
 )
 _KLINE_ENDPOINT = "https://push2his.eastmoney.com/api/qt/stock/kline/get"
 _SEARCH_ENDPOINT = "https://searchapi.eastmoney.com/api/suggest/get"
+_TREND_ENDPOINTS = (
+    "https://push2.eastmoney.com/api/qt/stock/trends2/get",
+    "https://push2delay.eastmoney.com/api/qt/stock/trends2/get",
+)
 _QUOTE_FIELDS = "f2,f3,f4,f5,f6,f8,f9,f12,f13,f14,f15,f16,f17,f18"
 _INDEX_SECIDS = ("1.000001", "0.399001", "0.399006")
 _INDEX_NAMES = {"000001": "上证指数", "399001": "深证成指", "399006": "创业板指"}
+_INDEX_IDS = dict(zip(_INDEX_NAMES, _INDEX_SECIDS))
 
 
 def to_secid(symbol: str) -> str:
@@ -55,6 +60,7 @@ class EastMoneyProvider(MarketDataProvider):
             headers={"User-Agent": "Mozilla/5.0", "Referer": "https://quote.eastmoney.com/"},
         )
         self._preferred_quote_endpoint = _QUOTE_ENDPOINTS[0]
+        self._preferred_trend_endpoint = _TREND_ENDPOINTS[0]
 
     async def __aenter__(self) -> "EastMoneyProvider":
         return self
@@ -81,6 +87,8 @@ class EastMoneyProvider(MarketDataProvider):
                     raise DataSourceError(f"EastMoney returned rc={payload['rc']}")
                 if endpoint in _QUOTE_ENDPOINTS:
                     self._preferred_quote_endpoint = endpoint
+                if endpoint in _TREND_ENDPOINTS:
+                    self._preferred_trend_endpoint = endpoint
                 return payload
             except httpx.TimeoutException as exc:
                 last_error = ProviderTimeoutError("EastMoney request timed out")
@@ -188,10 +196,52 @@ class EastMoneyProvider(MarketDataProvider):
                 change_amount=_number(row.get("f4"), scale=100),
                 volume=_integer(row.get("f5")),
                 turnover=_number(row.get("f6")),
+                high=_number(row.get("f15"), scale=100),
+                low=_number(row.get("f16"), scale=100),
             )
         if len(indices) != len(_INDEX_SECIDS):
             raise DataSourceError("EastMoney returned incomplete market indices")
         return [indices[symbol] for symbol in _INDEX_NAMES]
+
+    async def get_index_intraday(self, index_code: str = "000001") -> list[IntradayPoint]:
+        if index_code not in _INDEX_IDS:
+            raise InvalidSymbolError(f"Unsupported market index: {index_code!r}")
+        preferred = self._preferred_trend_endpoint
+        other = next(endpoint for endpoint in _TREND_ENDPOINTS if endpoint != preferred)
+        params = {
+            "secid": _INDEX_IDS[index_code], "ndays": 1, "iscr": 0,
+            "fields1": "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13",
+            "fields2": "f51,f52,f53,f54,f55,f56,f57,f58",
+        }
+        last_error: DataSourceError | None = None
+        for endpoint in (preferred, other):
+            try:
+                payload = await self._request_json((endpoint,), params)
+                data = payload.get("data")
+                if not isinstance(data, dict) or not isinstance(data.get("trends"), list) or not data["trends"]:
+                    raise DataSourceError("EastMoney intraday response is invalid")
+                points: list[IntradayPoint] = []
+                for row in data["trends"]:
+                    if not isinstance(row, str):
+                        raise DataSourceError("EastMoney intraday row is invalid")
+                    values = row.split(",")
+                    if len(values) < 7:
+                        raise DataSourceError("EastMoney intraday row has too few fields")
+                    try:
+                        points.append(IntradayPoint(
+                            time=datetime.fromisoformat(values[0]),
+                            price=_number(values[2], required=True),
+                            volume=_integer(values[5], required=True),
+                            turnover=_number(values[6], required=True),
+                        ))
+                    except (TypeError, ValueError) as exc:
+                        raise DataSourceError("EastMoney intraday row is invalid") from exc
+                latest_date = max(point.time.date() for point in points)
+                return [point for point in points if point.time.date() == latest_date]
+            except DataSourceError as exc:
+                last_error = exc
+        assert last_error is not None
+        raise last_error
 
     async def get_kline(
         self, symbol: str, period: Literal["daily", "weekly"] = "daily", limit: int = 120

@@ -84,7 +84,7 @@ def test_indices_use_three_explicit_market_identifiers() -> None:
         assert request.url.params["secids"] == "1.000001,0.399001,0.399006"
         return httpx.Response(200, json={"rc": 0, "data": {"diff": [
             {"f12": code, "f14": name, "f2": value, "f3": 125, "f4": 30,
-             "f5": 1000, "f6": 2000.0}
+             "f5": 1000, "f6": 2000.0, "f15": value + 100, "f16": value - 100}
             for code, name, value in (
                 ("000001", "上证指数", 388837),
                 ("399001", "深证成指", 1331697),
@@ -97,7 +97,37 @@ def test_indices_use_three_explicit_market_identifiers() -> None:
             indices = await EastMoneyProvider(client).get_indices()
         assert [item.symbol for item in indices] == ["000001", "399001", "399006"]
         assert indices[0].value == 3888.37
+        assert indices[0].high == 3889.37
+        assert indices[0].low == 3887.37
         assert indices[1].change_percent == 1.25
+
+    asyncio.run(run())
+
+
+def test_index_intraday_uses_backup_and_keeps_latest_trading_day() -> None:
+    hosts = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        hosts.append(request.url.host)
+        assert request.url.params["secid"] == "1.000001"
+        if request.url.host == "push2.eastmoney.com":
+            return httpx.Response(503)
+        return httpx.Response(200, json={"rc": 0, "data": {"trends": [
+            "2026-09-24 15:00,3000,3001,3002,2999,100,2000.0,3001",
+            "2026-09-25 09:30,3010,3011,3012,3009,110,2100.0,3011",
+            "2026-09-25 09:31,3011,3013,3014,3010,120,2200.0,3012",
+        ]}})
+
+    async def run() -> None:
+        async with _client(handler) as client:
+            provider = EastMoneyProvider(client)
+            first = await provider.get_index_intraday()
+            await provider.get_index_intraday()
+            assert [point.price for point in first] == [3011.0, 3013.0]
+            assert first[0].volume == 110
+            with pytest.raises(InvalidSymbolError):
+                await provider.get_index_intraday("600519")
+        assert hosts == ["push2.eastmoney.com", "push2delay.eastmoney.com", "push2delay.eastmoney.com"]
 
     asyncio.run(run())
 

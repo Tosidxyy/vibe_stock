@@ -1,9 +1,9 @@
 import asyncio
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 
-from app.models.market import KlineItem, MarketIndex, StockQuote, SymbolSearchResult
+from app.models.market import IntradayPoint, KlineItem, MarketIndex, StockQuote, SymbolSearchResult
 from app.providers.base import MarketDataProvider
 from app.providers.exceptions import DataSourceError
 from app.services.market import MarketService
@@ -22,6 +22,7 @@ class FakeProvider(MarketDataProvider):
     def __init__(self) -> None:
         self.quote_calls: list[tuple[str, ...]] = []
         self.index_calls = 0
+        self.intraday_calls = 0
         self.kline_calls = 0
         self.search_calls = 0
         self.fail = False
@@ -43,6 +44,13 @@ class FakeProvider(MarketDataProvider):
             raise DataSourceError("offline")
         return [MarketIndex(symbol="000001", name="上证指数", value=3000.0,
                             change_percent=1.0, change_amount=30.0, volume=1, turnover=2.0)]
+
+    async def get_index_intraday(self, index_code="000001"):
+        self.intraday_calls += 1
+        if self.fail:
+            raise DataSourceError("offline")
+        return [IntradayPoint(time=datetime(2026, 9, 25, 9, 30), price=3000.0,
+                              volume=100, turnover=2000.0)]
 
     async def get_kline(self, symbol, period="daily", limit=120):
         self.kline_calls += 1
@@ -97,6 +105,12 @@ def test_market_service_uses_short_cache_and_stale_flag() -> None:
         provider.fail = True
         assert (await service.get_indices()).stale
         assert provider.index_calls == 2
+        provider.fail = False
+        assert (await service.get_index_intraday()).data[0].price == 3000.0
+        assert provider.intraday_calls == 1
+        provider.fail = True
+        clock.now = 8.0
+        assert (await service.get_index_intraday()).stale
 
     asyncio.run(run())
 

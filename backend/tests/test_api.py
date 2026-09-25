@@ -1,10 +1,10 @@
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import create_app
-from app.models.market import KlineItem, MarketIndex, StockQuote, SymbolSearchResult
+from app.models.market import IntradayPoint, KlineItem, MarketIndex, StockQuote, SymbolSearchResult
 from app.providers.base import MarketDataProvider
 from app.providers.exceptions import DataSourceError, ProviderTimeoutError
 from app.services.stock import StockService
@@ -39,6 +39,11 @@ class FakeProvider(MarketDataProvider):
         return [MarketIndex(symbol="000001", name="上证指数", value=3000.0,
                             change_percent=1.0, change_amount=30.0, volume=1, turnover=2.0)]
 
+    async def get_index_intraday(self, index_code="000001") -> list[IntradayPoint]:
+        self._check()
+        return [IntradayPoint(time=datetime(2026, 9, 25, 9, 30), price=3000.0,
+                              volume=100, turnover=2000.0)]
+
     async def get_kline(self, symbol: str, period="daily", limit=120) -> list[KlineItem]:
         self.periods.append(period)
         self._check()
@@ -61,6 +66,10 @@ def test_market_indices_and_overview(api) -> None:
     assert indices.status_code == 200
     assert indices.json()["data"][0]["value"] == 3000.0
     assert indices.json()["stale"] is False
+    intraday = client.get("/api/market/indices/000001/intraday")
+    assert intraday.status_code == 200
+    assert intraday.json()["data"][0]["time"] == "2026-09-25T09:30:00"
+    assert client.get("/api/market/indices/123456/intraday").status_code == 422
     assert client.post("/api/watchlist", json={"symbol": "600519"}).status_code == 201
     overview = client.get("/api/market/overview")
     assert overview.status_code == 200

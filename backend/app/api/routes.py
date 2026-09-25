@@ -7,7 +7,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app.api.dependencies import get_market_service, get_stock_service, get_watchlist_service
 from app.api.schemas import DataResponse, MarketOverviewResponse, WatchlistAddRequest
-from app.models.market import KlineItem, MarketIndex, StockQuote, SymbolSearchResult
+from app.models.market import IntradayPoint, KlineItem, MarketIndex, StockQuote, SymbolSearchResult
 from app.services.market import MarketService
 from app.services.stock import StockService
 from app.services.watchlist import WatchlistEntry, WatchlistService
@@ -23,6 +23,14 @@ Code = Annotated[str, Path(pattern=r"^[03468][0-9]{5}$")]
 @router.get("/market/indices", response_model=DataResponse[list[MarketIndex]])
 async def get_indices(market: Market) -> DataResponse[list[MarketIndex]]:
     result = await market.get_indices()
+    return DataResponse(data=result.data, stale=result.stale)
+
+
+@router.get("/market/indices/{code}/intraday", response_model=DataResponse[list[IntradayPoint]])
+async def get_index_intraday(
+    market: Market, code: Annotated[str, Path(pattern=r"^(000001|399001|399006)$")]
+) -> DataResponse[list[IntradayPoint]]:
+    result = await market.get_index_intraday(code)
     return DataResponse(data=result.data, stale=result.stale)
 
 

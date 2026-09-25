@@ -1,6 +1,6 @@
 """Provider-independent P0 market data models."""
 
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import BaseModel
 
@@ -29,6 +29,15 @@ class MarketIndex(BaseModel):
     change_amount: float | None
     volume: int | None
     turnover: float | None
+    high: float | None = None
+    low: float | None = None
+
+
+class IntradayPoint(BaseModel):
+    time: datetime
+    price: float
+    volume: int
+    turnover: float
 
 
 class KlineItem(BaseModel):
