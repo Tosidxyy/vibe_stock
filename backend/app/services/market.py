@@ -1,0 +1,25 @@
+"""Market index access with short TTL and stale fallback."""
+
+from collections.abc import Callable
+
+from app.models.market import MarketIndex
+from app.providers.base import MarketDataProvider
+from app.services.cache import AsyncTTLStore, CachedResult
+
+
+class MarketService:
+    def __init__(
+        self,
+        provider: MarketDataProvider,
+        *,
+        index_ttl: float = 5,
+        stale_ttl: float = 3600,
+        timer: Callable[[], float] | None = None,
+    ) -> None:
+        self._provider = provider
+        self._indices: AsyncTTLStore[list[MarketIndex]] = AsyncTTLStore(
+            ttl=index_ttl, stale_ttl=stale_ttl, timer=timer
+        )
+
+    async def get_indices(self) -> CachedResult[list[MarketIndex]]:
+        return await self._indices.get("indices", self._provider.get_indices)
