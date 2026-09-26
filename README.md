@@ -1,6 +1,6 @@
 # StockPilot
 
-StockPilot V0.1 是 A 股看盘与 AI 辅助分析应用。当前已完成 P0 行情数据链、REST API、Web 行情页面、核心 Agent 对话及 Tool Trace；评测能力按 `TODO.md` 后续阶段实现。
+StockPilot V0.1 是 A 股看盘与 AI 辅助分析应用。当前已完成 P0 行情数据链、REST API、Web 行情页面、核心 Agent 对话、Tool Trace 和 Agent Evaluation。
 
 ## 启动后端
 
@@ -35,6 +35,19 @@ npm run dev
 ```
 
 访问 `http://localhost:3000`。前端默认连接 `http://localhost:8000`，可参考 `frontend/.env.example` 设置 `NEXT_PUBLIC_API_BASE_URL`。首页提供三大指数、分时走势、搜索、自选股、Agent 对话和最近 Tool Trace；个股详情提供基础行情、日/周 K 线及预填问题入口。完整对话与当前会话 Trace 位于 `/agent`，会话消息保存在后端 SQLite，浏览器仅保存会话 ID。数据源不可用时会显示重试提示，若后端有最近成功缓存则标注旧数据。市场温度、资金流和新闻仍待接入。
+
+## Agent Evaluation
+
+在 `backend/` 配置好本地 `.env` 后运行：
+
+```powershell
+uv sync
+uv run python ../evals/run_eval.py
+```
+
+可用 `--limit 2` 先运行两条冒烟 Case。24 条 Case 位于 `evals/datasets/`，覆盖单 Tool、多 Tool、自选股和股票比较。评测调用真实配置的模型，行情来自固定测试 Provider；不会访问真实东方财富数据或修改用户自选股。无模型配置时 CLI 输出 `SKIP`，不生成分数。输出包含 Tool Selection Accuracy、Argument Accuracy、Task Success Rate 和失败 Case；Tool 名称、次数与参数按严格匹配评分，任务成功还要求 Tool 成功且回答包含预期测试事实。
+
+2026-09-26 实际运行结果（DeepSeek `deepseek-flash`，固定测试行情，24 条 Case）：Tool Selection **22/24**、Argument Accuracy **22/24**、Task Success **22/24**。失败的 `eastmoney_daily` 和 `catl_daily` 都正确调用了日 K Tool，但又额外调用了报价 Tool，因此严格评分未通过。模型输出可能变化，复验时以当次 CLI 结果为准；这组分数不代表真实东方财富行情链路的成功率。
 
 ## 检查
 

@@ -266,18 +266,21 @@ evals/
 │   ├── tool_selection.yaml
 │   ├── arguments.yaml
 │   └── workflow.yaml
+├── fixtures.py
 └── run_eval.py
 ```
 
-指标：
+当前 24 条 Case 覆盖单 Tool、多 Tool、自选股和两只股票 K 线比较。运行器用 `pydantic-evals` 执行真实配置的模型，每条 Case 使用独立临时 SQLite 和固定 Provider 行情；评测不会请求实时东方财富数据，也不会修改用户自选股。评分依据实际持久化的 Tool Trace 和模型回答。
+
+指标按 Case 严格计算：
 
 ```text
-Tool Selection Accuracy
-Argument Accuracy
-Task Success Rate
+Tool Selection Accuracy = Tool 名称及调用次数完全匹配的 Case 数 / 总数
+Argument Accuracy = Tool 名称、次数及参数完全匹配的 Case 数 / 总数
+Task Success Rate = 参数正确、Tool 全部成功且回答包含预期测试事实的 Case 数 / 总数
 ```
 
-未配置模型则明确跳过，不伪造结果。
+CLI 输出三项分数和失败 Case 的预期/实际 Tool 调用；额外调用也计为选择失败。无模型配置时明确输出 `SKIP`，不生成分数。固定行情让输入可复验，但模型输出可能随运行变化；每次结果都需真实运行取得。2026-09-26 DeepSeek `deepseek-flash` 完整运行 24 条：三项均为 22/24，两条失败 Case 是正确调用日 K 后又额外调用报价 Tool。
 
 ## 12. 测试
 

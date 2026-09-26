@@ -6,7 +6,7 @@
 当前阶段：
 
 ```text
-Trace 已实现并完成测试 → 下一阶段：Evaluation（真实行情源在线复验待恢复）
+Evaluation 已实现并真实运行 → 下一阶段：GitHub 收尾（真实行情源在线复验待恢复）
 ```
 
 ## 1. 初始化
@@ -117,15 +117,17 @@ Trace 已实现并完成测试 → 下一阶段：Evaluation（真实行情源�
 
 ## 8. Evaluation
 
-- [ ] 20～50 条 Case
-- [ ] 单 Tool / 多 Tool / 自选股 / 股票比较
-- [ ] Tool Selection Accuracy
-- [ ] Argument Accuracy
-- [ ] Task Success Rate
-- [ ] CLI 运行 + 失败 Case
-- [ ] README 写入真实结果
+- [x] 20～50 条 Case
+- [x] 单 Tool / 多 Tool / 自选股 / 股票比较
+- [x] Tool Selection Accuracy
+- [x] Argument Accuracy
+- [x] Task Success Rate
+- [x] CLI 运行 + 失败 Case
+- [x] README 写入真实结果
 
 验收：可重复运行；无模型配置时明确跳过。
+
+注：2026-09-26 使用真实 DeepSeek `deepseek-flash` 模型与固定测试行情运行 24 条 Case，三项指标均为 22/24；两条失败 Case 均因模型在正确的日 K Tool 之后额外调用报价 Tool。无模型配置的跳过行为已通过测试。评测结果不替代真实东方财富行情源的端到端验收。
 
 ## 9. GitHub 收尾
 
