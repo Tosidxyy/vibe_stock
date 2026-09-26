@@ -1,0 +1,26 @@
+name: arguments
+cases:
+  - name: byd_symbol
+    inputs: {prompt: "查比亚迪（002594）的最新价格。"}
+    metadata: {tools: [{name: get_stock_quote, args: {symbol: "002594"}}], answer_contains: ["108.6"]}
+  - name: bank_symbol
+    inputs: {prompt: "平安银行代码 000001，现在报价是多少？"}
+    metadata: {tools: [{name: get_stock_quote, args: {symbol: "000001"}}], answer_contains: ["12.3"]}
+  - name: eastmoney_symbol
+    inputs: {prompt: "东方财富股票代码 300059 的现价？"}
+    metadata: {tools: [{name: get_stock_quote, args: {symbol: "300059"}}], answer_contains: ["24.6"]}
+  - name: catl_symbol
+    inputs: {prompt: "300750 宁德时代最新涨跌幅和价格。"}
+    metadata: {tools: [{name: get_stock_quote, args: {symbol: "300750"}}], answer_contains: ["251.3"]}
+  - name: moutai_daily
+    inputs: {prompt: "用日 K 线查看 600519 贵州茅台近 5 个交易日。"}
+    metadata: {tools: [{name: get_stock_kline, args: {symbol: "600519", period: daily, limit: 5}}], answer_contains: ["贵州茅台"]}
+  - name: bank_weekly
+    inputs: {prompt: "请调取平安银行 000001 最近 5 周的周 K 线。"}
+    metadata: {tools: [{name: get_stock_kline, args: {symbol: "000001", period: weekly, limit: 5}}], answer_contains: ["平安银行"]}
+  - name: catl_daily
+    inputs: {prompt: "宁德时代 300750 近 5 个交易日走势，用日 K。"}
+    metadata: {tools: [{name: get_stock_kline, args: {symbol: "300750", period: daily, limit: 5}}], answer_contains: ["宁德时代"]}
+  - name: eastmoney_weekly
+    inputs: {prompt: "看东方财富 300059 最近 5 周周线。"}
+    metadata: {tools: [{name: get_stock_kline, args: {symbol: "300059", period: weekly, limit: 5}}], answer_contains: ["东方财富"]}

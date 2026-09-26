@@ -1,0 +1,26 @@
+name: workflow
+cases:
+  - name: index_and_catl
+    inputs: {prompt: "测试快照中上证指数和宁德时代 300750 的行情分别如何？"}
+    metadata: {tools: [{name: get_market_indices, args: {}}, {name: get_stock_quote, args: {symbol: "300750"}}], answer_contains: ["3000", "251.3"]}
+  - name: index_and_eastmoney
+    inputs: {prompt: "比较测试快照的上证指数和东方财富 300059 当前表现。"}
+    metadata: {tools: [{name: get_market_indices, args: {}}, {name: get_stock_quote, args: {symbol: "300059"}}], answer_contains: ["3000", "24.6"]}
+  - name: quote_and_daily
+    inputs: {prompt: "宁德时代 300750 当前报价及最近 5 个交易日日 K 走势？"}
+    metadata: {tools: [{name: get_stock_quote, args: {symbol: "300750"}}, {name: get_stock_kline, args: {symbol: "300750", period: daily, limit: 5}}], answer_contains: ["251.3", "宁德时代"]}
+  - name: quote_and_weekly
+    inputs: {prompt: "东方财富 300059 现价和最近 5 周周 K 怎么样？"}
+    metadata: {tools: [{name: get_stock_quote, args: {symbol: "300059"}}, {name: get_stock_kline, args: {symbol: "300059", period: weekly, limit: 5}}], answer_contains: ["24.6", "东方财富"]}
+  - name: watchlist_two
+    inputs: {prompt: "总结我的两只自选股最新行情。", watchlist: ["300750", "002594"]}
+    metadata: {tools: [{name: get_watchlist, args: {}}], answer_contains: ["宁德时代", "比亚迪"]}
+  - name: watchlist_three
+    inputs: {prompt: "我关注的股票现价分别是多少？", watchlist: ["600519", "000001", "300059"]}
+    metadata: {tools: [{name: get_watchlist, args: {}}], answer_contains: ["贵州茅台", "平安银行", "东方财富"]}
+  - name: compare_daily
+    inputs: {prompt: "比较宁德时代 300750 和比亚迪 002594 最近 5 个交易日的日 K。"}
+    metadata: {tools: [{name: get_stock_kline, args: {symbol: "300750", period: daily, limit: 5}}, {name: get_stock_kline, args: {symbol: "002594", period: daily, limit: 5}}], answer_contains: ["宁德时代", "比亚迪"]}
+  - name: compare_weekly
+    inputs: {prompt: "对比东方财富 300059 和贵州茅台 600519 最近 5 周的周 K 线。"}
+    metadata: {tools: [{name: get_stock_kline, args: {symbol: "300059", period: weekly, limit: 5}}, {name: get_stock_kline, args: {symbol: "600519", period: weekly, limit: 5}}], answer_contains: ["东方财富", "贵州茅台"]}

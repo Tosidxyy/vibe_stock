@@ -15,6 +15,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "pydantic-evals>=2.50.0",
     "pytest>=9.1.1",
 ]
 

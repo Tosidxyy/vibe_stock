@@ -1,0 +1,26 @@
+name: tool_selection
+cases:
+  - name: sh_index
+    inputs: {prompt: "测试快照里上证指数是多少？"}
+    metadata: {tools: [{name: get_market_indices, args: {}}], answer_contains: ["3000"]}
+  - name: three_indices
+    inputs: {prompt: "请用测试行情列出三大指数点位。"}
+    metadata: {tools: [{name: get_market_indices, args: {}}], answer_contains: ["3000", "10000", "2000"]}
+  - name: catl_quote
+    inputs: {prompt: "查询宁德时代 300750 的最新报价。"}
+    metadata: {tools: [{name: get_stock_quote, args: {symbol: "300750"}}], answer_contains: ["251.3"]}
+  - name: moutai_quote
+    inputs: {prompt: "贵州茅台 600519 的现价是多少？"}
+    metadata: {tools: [{name: get_stock_quote, args: {symbol: "600519"}}], answer_contains: ["1680"]}
+  - name: eastmoney_daily
+    inputs: {prompt: "看一下东方财富 300059 最近 5 个交易日的日 K 线。"}
+    metadata: {tools: [{name: get_stock_kline, args: {symbol: "300059", period: daily, limit: 5}}], answer_contains: ["东方财富"]}
+  - name: byd_weekly
+    inputs: {prompt: "看比亚迪 002594 最近 5 周的周 K 线。"}
+    metadata: {tools: [{name: get_stock_kline, args: {symbol: "002594", period: weekly, limit: 5}}], answer_contains: ["比亚迪"]}
+  - name: watchlist_overview
+    inputs: {prompt: "看看我的自选股行情。", watchlist: ["300750", "002594"]}
+    metadata: {tools: [{name: get_watchlist, args: {}}], answer_contains: ["宁德时代", "比亚迪"]}
+  - name: watchlist_empty
+    inputs: {prompt: "我现在的自选股列表有什么？"}
+    metadata: {tools: [{name: get_watchlist, args: {}}], answer_contains: ["空"]}
