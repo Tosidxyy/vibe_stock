@@ -2,6 +2,8 @@
 
 StockPilot V0.1 是 A 股看盘与 AI 辅助分析应用。当前已完成 P0 行情数据链、REST API、Web 行情页面、核心 Agent 对话、Tool Trace 和 Agent Evaluation。
 
+当前完整 V0.1 验收仍受东方财富 K 线源连接失败影响，实际通过项与阻断项见 [验收记录](docs/acceptance.md)。
+
 ## Quick Start
 
 需要 Python 3.13、[uv](https://docs.astral.sh/uv/)、Node.js 和 npm。在仓库根目录先复制配置模板，再按需填写模型配置；真实密钥只放在 `backend/.env`：
