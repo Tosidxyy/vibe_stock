@@ -6,7 +6,7 @@
 当前阶段：
 
 ```text
-Evaluation 已实现并真实运行 → 下一阶段：GitHub 收尾（真实行情源在线复验待恢复）
+GitHub 收尾必需项已完成 → 下一阶段：V0.1 验收（真实行情源在线复验待恢复）
 ```
 
 ## 1. 初始化
@@ -131,13 +131,15 @@ Evaluation 已实现并真实运行 → 下一阶段：GitHub 收尾（真实行
 
 ## 9. GitHub 收尾
 
-- [ ] README / Quick Start / 环境变量
-- [ ] Dashboard 截图
-- [ ] Agent + Trace 截图
-- [ ] 架构图
-- [ ] 免责声明
-- [ ] 清理敏感信息 / 临时文件
+- [x] README / Quick Start / 环境变量
+- [x] Dashboard 截图
+- [x] Agent + Trace 截图
+- [x] 架构图
+- [x] 免责声明
+- [x] 清理敏感信息 / 临时文件
 - [ ] 可选：GIF / Docker / GitHub Actions
+
+注：截图使用固定示例行情和测试模型，README 已明确标注。已清理本轮临时服务文件与缓存目录；跟踪文件中只有空白 `.env.example` 模板，未发现真实 API Key。可选项不影响本阶段必需项完成。
 
 ## 10. V0.1 验收
 

@@ -2,6 +2,70 @@
 
 StockPilot V0.1 是 A 股看盘与 AI 辅助分析应用。当前已完成 P0 行情数据链、REST API、Web 行情页面、核心 Agent 对话、Tool Trace 和 Agent Evaluation。
 
+## Quick Start
+
+需要 Python 3.13、[uv](https://docs.astral.sh/uv/)、Node.js 和 npm。在仓库根目录先复制配置模板，再按需填写模型配置；真实密钥只放在 `backend/.env`：
+
+```powershell
+Copy-Item .env.example backend/.env
+```
+
+分别在两个终端启动：
+
+```powershell
+# 终端 1：后端
+cd backend
+uv sync
+uv run uvicorn app.main:app --reload
+```
+
+```powershell
+# 终端 2：前端
+cd frontend
+npm install
+npm run dev
+```
+
+打开 [Dashboard](http://localhost:3000)、[Agent 工作台](http://localhost:3000/agent)；后端 [健康检查](http://127.0.0.1:8000/health) 应返回 `{"status":"ok"}`。若本机 `uv` 全局缓存目录权限不足，已安装依赖时可在 `backend/` 运行 `.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload`。
+
+| 环境变量 | 用途 | 默认或示例 |
+|---|---|---|
+| `MODEL_NAME` | Agent 模型名称 | 留空则禁用在线对话 |
+| `MODEL_API_KEY` | 模型 API Key | 留空；仅填入 `backend/.env` |
+| `MODEL_BASE_URL` | OpenAI 兼容 API 地址 | 留空使用模型提供方默认地址 |
+| `DATABASE_URL` | SQLite 数据库连接 | `sqlite:///./stockpilot.db` |
+| `CORS_ORIGINS` | 允许访问 API 的前端来源 | `http://localhost:3000` 等，JSON 数组 |
+| `NEXT_PUBLIC_API_BASE_URL` | 前端连接的后端地址 | `http://localhost:8000`，在 `frontend/.env.local` 配置 |
+
+## 界面预览
+
+以下截图使用固定示例行情与测试模型，仅展示界面和数据流；**数字不是实时行情，回答不是 DeepSeek 在线输出**。
+
+![Dashboard：固定示例行情](docs/screenshots/dashboard.png)
+
+![Agent 对话与 Tool Trace：固定示例行情](docs/screenshots/agent-trace.png)
+
+## 架构
+
+```mermaid
+flowchart LR
+    Web[Next.js Web] --> API[FastAPI Routes]
+    API --> Services[Market / Stock / Watchlist Services]
+    API --> Agent[PydanticAI Agent]
+    Agent --> Tools[P0 Market Tools]
+    Tools --> Services
+    Services --> Cache[TTL Cache]
+    Services --> Provider[MarketDataProvider]
+    Provider --> EastMoney[EastMoneyProvider]
+    EastMoney --> Source[东方财富行情源]
+    Services --> SQLite[(SQLite 自选股)]
+    Agent --> ChatTrace[(SQLite Chat / Trace)]
+    Evals[pydantic-evals CLI] --> EvalAgent[Agent Service]
+    EvalAgent --> Fixture[固定测试 Provider]
+```
+
+行情读取沿 Route 或 Tool → Service → Provider 流动；Evaluation 使用固定测试 Provider，因此评测结果与真实行情源可用性分开记录。
+
 ## 启动后端
 
 需要 [uv](https://docs.astral.sh/uv/)。在 `backend/` 目录运行：
@@ -55,3 +119,7 @@ uv run python ../evals/run_eval.py
 cd backend; uv run pytest
 cd ../frontend; npm run lint; npx tsc --noEmit; npm run build
 ```
+
+## 免责声明
+
+StockPilot 用于行情展示和技术演示，内容仅供参考，不构成投资建议、交易指令或收益保证。行情依赖第三方数据源，可能延迟、缺失或不可用；遇到数据源错误时请以可靠的交易渠道核实。截图中的行情与 Agent 回答为固定示例，不可作为实际投资决策依据。
